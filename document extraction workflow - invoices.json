@@ -1,0 +1,618 @@
+{
+  "name": "document extraction workflow - invoices",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "has:attachment filename:pdf"
+        },
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "38ac8864-677a-4682-9afe-027d22354c91",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VGI6SmgkdgYE7Me5",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/documents",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "attachment_0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "06d56d3c-d177-4d25-951e-44c70d55fb43",
+      "name": "Upload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:8000/documents/{{ $json.id }}/process",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e728928d-bb4c-422b-9070-a565e366dbbc",
+      "name": "Process",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a8420816-c90f-4001-a6f6-042a60511657",
+              "leftValue": "={{ $json.extraction.status === 'ok' && $json.extraction.document_type === 'invoice' && $json.extraction.confidence >= 0.7 }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        -160
+      ],
+      "id": "83bf4390-d2b7-4790-9cbd-eecad25a9a35",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE",
+          "mode": "list",
+          "cachedResultName": "document processing pipeline - invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.extraction.date }}",
+            "Vendor": "={{ $json.extraction.vendor }}",
+            "Total": "={{ $json.extraction.total_amount }}",
+            "Currency": "={{ $json.extraction.currency }}",
+            "Category": "={{ $json.extraction.category }}",
+            "Confidence": "={{ $json.extraction.confidence }}",
+            "Processed At": "={{ $now.toISO() }}",
+            "document_id": "={{ $json.id }}",
+            "file_name": "={{ $json.name }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Vendor",
+              "displayName": "Vendor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Total",
+              "displayName": "Total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Currency",
+              "displayName": "Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Confidence",
+              "displayName": "Confidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "document_id",
+              "displayName": "document_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        -272
+      ],
+      "id": "566d0181-eda3-4db0-9413-39e8c91ef149",
+      "name": "Log Invoice",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ly0P0cVSWRzHsJqM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE",
+          "mode": "list",
+          "cachedResultName": "document processing pipeline - invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 93062867,
+          "mode": "list",
+          "cachedResultName": "Needs Review",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE/edit#gid=93062867"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "document_id": "={{ $json.id }}",
+            "file_name": "={{ $json.name }}",
+            "extraction_status": "={{ $json.extraction.status }}",
+            "raw_extraction": "={{ JSON.stringify($json.extraction) }}",
+            "source_email": "={{ $('Gmail Trigger').item.json.from.value[0].address }}",
+            "processed_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "document_id",
+              "displayName": "document_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "extraction_status",
+              "displayName": "extraction_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_extraction",
+              "displayName": "raw_extraction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source_email",
+              "displayName": "source_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        -64
+      ],
+      "id": "b9273ad0-9528-41e3-abc1-59320c9f197f",
+      "name": "Log Review",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ly0P0cVSWRzHsJqM",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e58e9898-8b18-4c2c-9ea5-068a2b8f4d10",
+              "name": "=status_code",
+              "value": "={{ String($json.error?.httpCode ?? $json.error?.status ?? $json.statusCode ?? 'unknown') }}",
+              "type": "string"
+            },
+            {
+              "id": "d5deeb14-5686-4beb-b7e9-874d3c1271df",
+              "name": "=error_message",
+              "value": "={{ $json.error?.message ?? $json.error?.description ?? JSON.stringify($json).slice(0, 500) }}",
+              "type": "string"
+            },
+            {
+              "id": "8c9da4e3-1f03-404f-b60c-b9c93e85f985",
+              "name": "=document_id",
+              "value": "={{ $('Upload').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "b6b7d7c7-4327-48e8-9fb1-19c34a40b2b1",
+              "name": "file_name",
+              "value": "={{ $('Upload').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "cde91e46-cc15-4a55-b9ce-258e03342f6c",
+              "name": "=error_type",
+              "value": "={{ (() => { const c = String($json.error?.httpCode ?? $json.error?.status ?? $json.statusCode ?? ''); return c === '409' ? 'duplicate' : (c.startsWith('5') ? 'retryable' : 'terminal'); })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        144
+      ],
+      "id": "186012c9-deba-425f-b1e1-6d36a6d121a2",
+      "name": "Classify Error"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE",
+          "mode": "list",
+          "cachedResultName": "document processing pipeline - invoices",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 232394848,
+          "mode": "list",
+          "cachedResultName": "Errors",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lRv31Tusoosf2RSTmUp4li4TNHPCtjCQfPvpkOZ3TqE/edit#gid=232394848"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "document_id": "={{ $json.document_id }}",
+            "file_name": "={{ $json.file_name }}",
+            "error_type": "={{ $json.error_type }}",
+            "status_code": "={{ $json.status_code }}",
+            "error_message": "={{ $json.error_message }}",
+            "source_email": "={{ $('Gmail Trigger').item.json.from.value[0].address }}",
+            "processed_at": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "document_id",
+              "displayName": "document_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "error_type",
+              "displayName": "error_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status_code",
+              "displayName": "status_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "error_message",
+              "displayName": "error_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source_email",
+              "displayName": "source_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "processed_at",
+              "displayName": "processed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        144
+      ],
+      "id": "a5e595ed-ca24-4c19-9d11-d0aaeeec7d53",
+      "name": "Log Error",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ly0P0cVSWRzHsJqM",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Classify Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Log Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Error": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "6ef5f484-cde4-46d0-918f-3965fa7596ea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f2e4b1515c746b02518a5db20f67c511026a54f44e6079f28bcfe8eaf4f03d70"
+  },
+  "nodeGroups": [],
+  "id": "MJW8qYTPG8PFwrK1",
+  "tags": []
+}
